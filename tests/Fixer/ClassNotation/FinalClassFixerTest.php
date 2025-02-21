@@ -77,6 +77,96 @@ final class FinalClassFixerTest extends AbstractFixerTestCase
         ];
 
         yield [
+            <<<'EOF'
+                <?php
+                namespace Foo;
+                class MyClass {}
+                final class MyChildClass extends \Foo\MyClass {}
+                EOF,
+            <<<'EOF'
+                <?php
+                namespace Foo;
+                class MyClass {}
+                class MyChildClass extends \Foo\MyClass {}
+                EOF,
+        ];
+
+        yield [
+            <<<'EOF'
+                <?php
+                namespace Foo;
+                class MyClass {}
+                final class MyChildClass extends MyClass {}
+                EOF,
+            <<<'EOF'
+                <?php
+                namespace Foo;
+                class MyClass {}
+                class MyChildClass extends MyClass {}
+                EOF,
+        ];
+
+        yield [
+            <<<'EOF'
+                <?php
+                namespace Bar;
+                use Foo\MyClass;
+                final class MyChildClass extends MyClass {}
+                EOF,
+            <<<'EOF'
+                <?php
+                namespace Bar;
+                use Foo\MyClass;
+                class MyChildClass extends MyClass {}
+                EOF,
+        ];
+
+        yield [
+            <<<'EOF'
+                <?php
+                namespace Bar;
+                use Foo\MyClass;
+                final class MyChildClass extends \Foo\MyClass {}
+                EOF,
+            <<<'EOF'
+                <?php
+                namespace Bar;
+                use Foo\MyClass;
+                class MyChildClass extends \Foo\MyClass {}
+                EOF,
+        ];
+
+        yield [
+            <<<'EOF'
+                <?php
+                namespace Foo\Bar\Baz;
+                class ParentClass {}
+                final class ChildClass extends ParentClass {}
+                EOF,
+            <<<'EOF'
+                <?php
+                namespace Foo\Bar\Baz;
+                class ParentClass {}
+                class ChildClass extends ParentClass {}
+                EOF,
+        ];
+
+        yield [
+            <<<'EOF'
+                <?php
+                namespace Bar;
+                use Foo\MyClass as BaseClass;
+                final class MyChildClass extends BaseClass {}
+                EOF,
+            <<<'EOF'
+                <?php
+                namespace Bar;
+                use Foo\MyClass as BaseClass;
+                class MyChildClass extends BaseClass {}
+                EOF,
+        ];
+
+        yield [
             '<?php final class MyClass extends MyAbstract {}',
             '<?php class MyClass extends MyAbstract {}',
         ];

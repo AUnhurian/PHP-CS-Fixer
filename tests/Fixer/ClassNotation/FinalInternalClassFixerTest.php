@@ -211,6 +211,108 @@ class Bar extends Foo {}
         ];
 
         yield [
+            <<<'EOF'
+                <?php
+                namespace Foo;
+                class MyClass {}
+                /** @internal */
+                final class MyChildClass extends \Foo\MyClass {}
+                EOF,
+            <<<'EOF'
+                <?php
+                namespace Foo;
+                class MyClass {}
+                /** @internal */
+                class MyChildClass extends \Foo\MyClass {}
+                EOF,
+        ];
+
+        yield [
+            <<<'EOF'
+                <?php
+                namespace Foo;
+                class MyClass {}
+                /** @internal */
+                final class MyChildClass extends MyClass {}
+                EOF,
+            <<<'EOF'
+                <?php
+                namespace Foo;
+                class MyClass {}
+                /** @internal */
+                class MyChildClass extends MyClass {}
+                EOF,
+        ];
+
+        yield [
+            <<<'EOF'
+                <?php
+                namespace Bar;
+                use Foo\MyClass;
+                /** @internal */
+                final class MyChildClass extends MyClass {}
+                EOF,
+            <<<'EOF'
+                <?php
+                namespace Bar;
+                use Foo\MyClass;
+                /** @internal */
+                class MyChildClass extends MyClass {}
+                EOF,
+        ];
+
+        yield [
+            <<<'EOF'
+                <?php
+                namespace Bar;
+                use Foo\MyClass;
+                /** @internal */
+                final class MyChildClass extends \Foo\MyClass {}
+                EOF,
+            <<<'EOF'
+                <?php
+                namespace Bar;
+                use Foo\MyClass;
+                /** @internal */
+                class MyChildClass extends \Foo\MyClass {}
+                EOF,
+        ];
+
+        yield [
+            <<<'EOF'
+                <?php
+                namespace Foo\Bar\Baz;
+                class ParentClass {}
+                /** @internal */
+                final class ChildClass extends ParentClass {}
+                EOF,
+            <<<'EOF'
+                <?php
+                namespace Foo\Bar\Baz;
+                class ParentClass {}
+                /** @internal */
+                class ChildClass extends ParentClass {}
+                EOF,
+        ];
+
+        yield [
+            <<<'EOF'
+                <?php
+                namespace Bar;
+                use Foo\MyClass as BaseClass;
+                /** @internal */
+                final class MyChildClass extends BaseClass {}
+                EOF,
+            <<<'EOF'
+                <?php
+                namespace Bar;
+                use Foo\MyClass as BaseClass;
+                /** @internal */
+                class MyChildClass extends BaseClass {}
+                EOF,
+        ];
+
+        yield [
             "<?php\n/** @CUSTOM */final class A{}",
             "<?php\n/** @CUSTOM */class A{}",
             [

@@ -73,6 +73,8 @@ final class FinalInternalClassFixer extends AbstractFixer implements Configurabl
         ],
     ];
 
+    private const NAMESPACE_SEPARATOR = '\\';
+
     private bool $checkAttributes;
 
     public function __construct()
@@ -378,10 +380,8 @@ final class FinalInternalClassFixer extends AbstractFixer implements Configurabl
 
     private function isParentClass(Tokens $tokens, int $classIndex): bool
     {
-        $className = $this->getClassName($tokens, $classIndex);
-        if (1 === $tokens->countTokenKind(T_CLASS)) {
-            return false;
-        }
+        $namespace = $this->getNamespace($tokens);
+        $className = $this->getFullClassName($tokens, $classIndex, $namespace);
 
         foreach ($tokens as $index => $token) {
             if (!$token->isGivenKind(T_EXTENDS)) {
@@ -389,11 +389,17 @@ final class FinalInternalClassFixer extends AbstractFixer implements Configurabl
             }
 
             $nextIndex = $tokens->getNextMeaningfulToken($index);
-            if (!$tokens[$nextIndex]->isGivenKind(T_STRING)) {
+            if (!$tokens[$nextIndex]->isGivenKind([T_STRING, T_NS_SEPARATOR])) {
                 continue;
             }
 
-            if ($tokens[$nextIndex]->getContent() === $className) {
+            $parentClassName = $this->getFullClassName($tokens, $nextIndex, $namespace);
+
+            if (null === $parentClassName) {
+                break;
+            }
+
+            if ($parentClassName === $className) {
                 return true;
             }
         }
@@ -401,13 +407,59 @@ final class FinalInternalClassFixer extends AbstractFixer implements Configurabl
         return false;
     }
 
-    private function getClassName(Tokens $tokens, int $classIndex): ?string
+    private function getNamespace(Tokens $tokens): string
     {
-        $nextIndex = $tokens->getNextMeaningfulToken($classIndex);
-        if ($tokens[$nextIndex]->isGivenKind(T_STRING)) {
-            return $tokens[$nextIndex]->getContent();
+        $index = $tokens->getNextTokenOfKind(0, [[T_NAMESPACE]]);
+        if (null === $index) {
+            return '';
         }
 
-        return null;
+        $index = $tokens->getNextMeaningfulToken($index);
+        $namespaceParts = [];
+
+        while (isset($tokens[$index]) && $tokens[$index]->isGivenKind([T_STRING, T_NS_SEPARATOR])) {
+            $namespaceParts[] = $tokens[$index]->getContent();
+            $index = $tokens->getNextMeaningfulToken($index);
+        }
+
+        return implode('', $namespaceParts);
+    }
+
+    private function getFullClassName(Tokens $tokens, int $classIndex, string $namespace = ''): ?string
+    {
+        $index = $tokens->getNextMeaningfulToken($classIndex);
+        $parts = [];
+        $isAbsolute = false;
+
+        if ($tokens[$index]->isGivenKind(T_NS_SEPARATOR)) {
+            $isAbsolute = true;
+            $index = $tokens->getNextMeaningfulToken($index);
+        }
+
+        while (isset($tokens[$index]) && $tokens[$index]->isGivenKind([T_STRING, T_NS_SEPARATOR])) {
+            $parts[] = $tokens[$index]->getContent();
+            $index = $tokens->getNextMeaningfulToken($index);
+        }
+
+        $className = implode('', $parts);
+
+        if ($isAbsolute) {
+            return ltrim($className, self::NAMESPACE_SEPARATOR);
+        }
+
+        if (!$namespace) {
+            return $className ?: $tokens[$classIndex]->getContent();
+        }
+
+        if (strpos($className, $namespace . self::NAMESPACE_SEPARATOR) === 0) {
+            return $className;
+        }
+
+        $clearNamespace = trim($namespace, self::NAMESPACE_SEPARATOR);
+
+        return implode(self::NAMESPACE_SEPARATOR, [
+            $clearNamespace,
+            $className ?: $tokens[$classIndex]->getContent()
+        ]);
     }
 }
